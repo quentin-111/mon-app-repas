@@ -8,11 +8,8 @@ DOC_ID_REGLES = "1-OL2ITtUqHv4ZksQ39SweU0fQXxkU-aKpy32_AsMshU"
 DOC_ID_REPAS = "1JMQERJ2_KfqII45fZuXDyOATWLrbcwUM5sjRcOqt0YM"
 MODEL_NAME = 'gemini-3-flash-preview'
 
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-except Exception as e:
-    st.error(f"Erreur API : {e}")
+if "GEMINI_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 def get_google_doc_text(doc_id):
     url = f"https://docs.google.com/document/d/{doc_id}/export?format=txt"
@@ -23,52 +20,51 @@ def get_google_doc_text(doc_id):
         return "Erreur"
 
 # --- INTERFACE ---
-st.set_page_config(page_title="Planning Repas", page_icon="📅")
+st.set_page_config(page_title="Planning Repas Créatif", page_icon="📅")
 
-st.title("📅 Planning des 2 prochaines semaines")
-st.write(f"Généré le **{datetime.now().strftime('%d/%m/%Y')}**")
+st.title("📅 Planning Repas (2 semaines)")
 
-if st.button("🪄 Générer le planning complet", type="primary"):
-    with st.spinner("Planification en cours..."):
+# Zone de boutons
+col1, col2 = st.columns(2)
+with col1:
+    generate_btn = st.button("🪄 Générer un nouveau planning", type="primary", use_container_width=True)
+with col2:
+    # Ce bouton fait techniquement la même chose mais l'IA génère toujours une réponse différente
+    retry_btn = st.button("🔄 Refaire des propositions", use_container_width=True)
+
+if generate_btn or retry_btn:
+    with st.spinner("L'IA concocte de nouvelles idées inédites..."):
         regles = get_google_doc_text(DOC_ID_REGLES)
         historique = get_google_doc_text(DOC_ID_REPAS)
         
         try:
             model = genai.GenerativeModel(model_name=MODEL_NAME)
             
-            # Prompt modifié pour un planning de 14 jours sans blabla
             prompt = f"""
-            Tu es un planificateur de repas expert. 
-            RÈGLES : {regles}
-            HISTORIQUE : {historique}
+            Tu es un chef créatif spécialisé dans la cuisine familiale saine.
+            
+            TES SOURCES (Style et Contraintes) :
+            - Règles de vie : {regles}
+            - Historique des plats aimés : {historique}
             
             MISSION :
-            Génère un planning de repas pour les 14 PROCHAINS JOURS à partir d'aujourd'hui ({datetime.now().strftime('%A %d %B %Y')}).
+            Génère un planning de 14 jours (du {datetime.now().strftime('%d/%m/%Y')} au {(datetime.now() + timedelta(days=13)).strftime('%d/%m/%Y')}).
+            
+            CONSIGNES DE CRÉATIVITÉ :
+            - Ne recopie pas bêtement l'historique. Utilise-le pour comprendre les GOÛTS (ex: ils aiment les courges, les tartes, le végétarien).
+            - Propose au moins 50% de NOUVELLES IDÉES de plats que l'on ne trouve pas dans l'historique, mais qui respectent le style (sain, rapide, saisonnier, enfant de 5 ans).
+            - Varie les plaisirs : cuisine du monde (douce), gratins originaux, nouvelles façons de cuisiner les légumes d'hiver (panais, topinambours, poireaux, etc.).
             
             CONTRAINTES DE FORMAT :
-            1. Réponds UNIQUEMENT sous forme de TABLEAU Markdown.
-            2. Colonnes : Jour, Date, Repas Midi, Repas Soir.
-            3. Si un créneau ne nécessite pas de repas selon les règles (ex: midi en semaine), laisse la case vide ou mets "-".
-            4. Ne donne AUCUNE explication, AUCUN ingrédient, AUCUNE introduction. Juste le tableau.
-            
-            RÈGLES MÉTIER À RESPECTER :
-            - Samedi : Midi et Soir.
-            - Dimanche : Midi uniquement.
-            - Semaine : Soir uniquement.
-            - Jeudi : Pâtes légumes obligatoires.
-            - Respecte la saisonnalité (Hiver actuel) et la règle du marché/conservation.
-            - Alterne les plats de l'historique pour varier.
+            - Uniquement un TABLEAU Markdown : Jour, Date, Midi, Soir.
+            - Pas de texte avant ou après.
             """
             
             response = model.generate_content(prompt)
-            
-            # Affichage du tableau
             st.markdown(response.text)
             
-            st.success("Planning généré ! Tu peux faire une capture d'écran ou le copier.")
-
         except Exception as e:
             st.error(f"Erreur : {e}")
 
 st.divider()
-st.info("Les suggestions se basent sur vos documents Google Docs en temps réel.")
+st.info("Astuce : Si une idée ne vous plaît pas, cliquez sur 'Refaire des propositions' pour obtenir une version totalement différente.")
