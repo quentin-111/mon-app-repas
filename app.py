@@ -32,7 +32,7 @@ if st.button("Générer une suggestion de repas", type="primary"):
         historique = get_google_doc_text(DOC_ID_REPAS)
         
         # 2. Préparation du modèle
-        model = genai.GenerativeModel('gemini-1.5-flash') # Version rapide et efficace
+        model = genai.GenerativeModel(model_name='models/gemini-1.5-flash') # Version rapide et efficace
         
         prompt = f"""
         Tu es un assistant culinaire familial. 
